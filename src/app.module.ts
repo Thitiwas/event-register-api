@@ -10,6 +10,7 @@ import { APP_GUARD, APP_PIPE } from '@nestjs/core'
 import { ValidationPipe } from './pipes/validator.pipe'
 import { JwtAuthGuard } from './auth/jwt-auth.guard'
 import { RolesGuard } from './auth/role.guard'
+import { EventModule } from './event/event.module'
 
 const AppProvider = [
   {
@@ -43,7 +44,8 @@ const AppProvider = [
     }),
     UserModule,
     TokenModule,
-    AuthModule
+    AuthModule,
+    EventModule
   ],
   controllers: [AppController],
   providers: [...AppProvider]
