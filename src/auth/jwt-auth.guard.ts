@@ -57,6 +57,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   public static getAuthorizedUserId(): any {
     return JwtAuthGuard['_this'] ? JwtAuthGuard['_this'].user.sub : 0
   }
+
+  public static getAuthorizedUser(): any {
+    return JwtAuthGuard['_this'] ? JwtAuthGuard['_this'].user : null
+  }
+
   public static getTokenFromRequest(): any {
     return JwtAuthGuard['_this'].request.headers.authorization
   }

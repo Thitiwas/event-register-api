@@ -3,8 +3,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { Public } from 'src/auth/constants'
 import { Roles } from 'src/auth/roles.decorator'
 import { PaginateDto } from 'src/common/dto/pagination.dto'
+import { RoleEnum } from 'src/common/enum/role.enum'
 import { CreateEventDto } from '../dto/CreateEvent.dto'
 import { GetSeatDto } from '../dto/GetSeat.dto'
+import { RegisterDto } from '../dto/Register.dto'
 import { EventLogic } from '../logics/event.logic'
 
 @ApiBearerAuth()
@@ -17,6 +19,12 @@ export class EventController {
   @Post('/')
   createOne(@Body() body: CreateEventDto) {
     return this.eventLogic.create(body)
+  }
+
+  @Public()
+  @Post('/register')
+  register(@Body() body: RegisterDto) {
+    return this.eventLogic.register(body, RoleEnum.CUSTOMER)
   }
 
   @Public()

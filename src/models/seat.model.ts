@@ -33,7 +33,7 @@ export class Seat extends Model {
   phone: string
 
   @Column(DataType.TEXT)
-  status: SeatStatusEnum = SeatStatusEnum.AVAILABLE
+  status: SeatStatusEnum
 
   @Column(DataType.BOOLEAN)
   bookedByAdmin: boolean = false

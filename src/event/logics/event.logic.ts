@@ -10,7 +10,9 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { CreateSeatDto } from '../dto/CreateSeat.dto'
 import { SeatDB } from '../services/seat.db'
 import { GetSeatDto } from '../dto/GetSeat.dto'
-
+import { RoleEnum } from 'src/common/enum/role.enum'
+import { RegisterDto } from '../dto/Register.dto'
+import { SeatStatusEnum } from 'src/common/enum/seat.enum'
 @Injectable()
 export class EventLogic {
   constructor(private eventDB: EventDB, private seatDB: SeatDB) {}
@@ -55,5 +57,35 @@ export class EventLogic {
   async findALlSeatByEventID(eventID: number, query: GetSeatDto) {
     const condition = await query.buildCondition(eventID)
     return await this.seatDB.findAll(condition, [], [], query)
+  }
+
+  async findSeatByID(seatID: number) {
+    try {
+      return await this.seatDB.findOne({ seatID })
+    } catch (error) {
+      throw new InternalServerErrorException(error)
+    }
+  }
+
+  async register(payload: RegisterDto, role: string) {
+    try {
+      const seatData = await this.findSeatByID(payload.seatID)
+      if (seatData.status === SeatStatusEnum.BOOKED)
+        throw new BadRequestException(
+          `seat number ${payload.seatNumber} not available please try again.`
+        )
+      await JwtAuthGuard.getAuthorizedUser()
+      if (role === RoleEnum.ADMIN) payload.bookedByAdmin = true
+      payload.status = SeatStatusEnum.BOOKED
+      console.log(payload)
+
+      await this.seatDB.update(
+        { eventID: payload.eventID, seatID: payload.seatID },
+        payload
+      )
+      return { message: 'update success' }
+    } catch (error) {
+      throw new InternalServerErrorException(error)
+    }
   }
 }

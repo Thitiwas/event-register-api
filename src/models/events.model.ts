@@ -29,13 +29,13 @@ export class Event extends Model {
   locationName: string
 
   @Column(DataType.DATE)
+  eventDate: Date
+
+  @Column(DataType.DATE)
   startRegisterAt: Date
 
   @Column(DataType.DATE)
   endRegisterAt: Date
-
-  @Column(DataType.INTEGER)
-  seatRow: number
 
   @Column(DataType.INTEGER)
   seatColumn: number

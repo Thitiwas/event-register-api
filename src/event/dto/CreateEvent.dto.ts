@@ -30,7 +30,13 @@ export class CreateEventDto {
 
   @IsString()
   @ApiProperty({
-    example: DateTime.now()
+    example: DateTime.local().plus({ days: 10 })
+  })
+  eventDate: Date
+
+  @IsString()
+  @ApiProperty({
+    example: DateTime.local()
   })
   startRegisterAt: Date
 
@@ -42,19 +48,13 @@ export class CreateEventDto {
 
   @IsNumber()
   @ApiProperty({
-    example: 10
-  })
-  seatRow: number
-
-  @IsNumber()
-  @ApiProperty({
     example: 5
   })
   seatColumn: number
 
   @IsNumber()
   @ApiProperty({
-    example: 50
+    example: 10
   })
   totalSeat: number
 
