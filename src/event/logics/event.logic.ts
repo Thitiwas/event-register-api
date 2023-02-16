@@ -56,7 +56,16 @@ export class EventLogic {
 
   async findALlSeatByEventID(eventID: number, query: GetSeatDto) {
     const condition = await query.buildCondition(eventID)
-    return await this.seatDB.findAll(condition, [], [], query)
+    const seats = await this.seatDB.findAll(condition, [], [], query)
+    const booked = await this.seatDB.count({
+      eventID,
+      status: SeatStatusEnum.BOOKED
+    })
+    const available = await this.seatDB.count({
+      eventID,
+      status: SeatStatusEnum.AVAILABLE
+    })
+    return { seats, booked, available }
   }
 
   async findSeatByID(seatID: number) {
@@ -72,13 +81,11 @@ export class EventLogic {
       const seatData = await this.findSeatByID(payload.seatID)
       if (seatData.status === SeatStatusEnum.BOOKED)
         throw new BadRequestException(
-          `seat number ${payload.seatNumber} not available please try again.`
+          `selected seat not available please try again.`
         )
       await JwtAuthGuard.getAuthorizedUser()
       if (role === RoleEnum.ADMIN) payload.bookedByAdmin = true
       payload.status = SeatStatusEnum.BOOKED
-      console.log(payload)
-
       await this.seatDB.update(
         { eventID: payload.eventID, seatID: payload.seatID },
         payload

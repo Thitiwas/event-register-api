@@ -54,4 +54,8 @@ export class SeatDB {
     if (includes && includes.length) payload['include'] = includes
     return this.seatModel.findOne(payload)
   }
+
+  async count(condition: any): Promise<any> {
+    return await this.seatModel.count({ where: condition })
+  }
 }
