@@ -11,6 +11,6 @@ import { SeatDB } from './services/seat.db'
   imports: [SequelizeModule.forFeature([Event, Seat])],
   controllers: [EventController],
   providers: [EventLogic, EventDB, SeatDB],
-  exports: []
+  exports: [EventDB, SeatDB]
 })
 export class EventModule {}

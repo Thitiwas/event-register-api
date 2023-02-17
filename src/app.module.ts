@@ -11,6 +11,7 @@ import { ValidationPipe } from './pipes/validator.pipe'
 import { JwtAuthGuard } from './auth/jwt-auth.guard'
 import { RolesGuard } from './auth/role.guard'
 import { EventModule } from './event/event.module'
+import { AdminModule } from './admin/admin.module'
 
 const AppProvider = [
   {
@@ -45,7 +46,8 @@ const AppProvider = [
     UserModule,
     TokenModule,
     AuthModule,
-    EventModule
+    EventModule,
+    AdminModule
   ],
   controllers: [AppController],
   providers: [...AppProvider]

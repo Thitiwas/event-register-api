@@ -15,12 +15,6 @@ import { EventLogic } from '../logics/event.logic'
 export class EventController {
   constructor(private eventLogic: EventLogic) {}
 
-  @Roles('admin')
-  @Post('/')
-  createOne(@Body() body: CreateEventDto) {
-    return this.eventLogic.create(body)
-  }
-
   @Public()
   @Post('/register')
   register(@Body() body: RegisterDto) {
