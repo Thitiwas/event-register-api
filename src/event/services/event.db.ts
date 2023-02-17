@@ -41,7 +41,7 @@ export class EventDB {
     query: PaginateDto,
     attributes?: Array<string>,
     includes?: Array<any>
-  ): Promise<Event[]> {
+  ): Promise<{ total: number; results: Event[] }> {
     const {
       order,
       limit,
@@ -56,6 +56,9 @@ export class EventDB {
     }
     if (attributes && attributes.length) payload['attributes'] = attributes
     if (includes && includes.length) payload['include'] = includes
-    return await this.eventModel.findAll(payload)
+
+    const total = await this.eventModel.count(payload)
+    const results = await this.eventModel.findAll(payload)
+    return { total, results }
   }
 }
