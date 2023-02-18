@@ -15,22 +15,19 @@ import { AdminEventLogic } from '../logics/admin.logic'
 export class AdminEventController {
   constructor(private adminEventLogic: AdminEventLogic) {}
 
-  // @Roles('admin')
-  @Public()
+  @Roles('admin')
   @Post('/')
   createOne(@Body() body: CreateEventDto) {
     return this.adminEventLogic.create(body)
   }
 
-  // @Roles('admin')
-  @Public()
+  @Roles('admin')
   @Post('/register')
   register(@Body() body: RegisterDto) {
     return this.adminEventLogic.register(body, RoleEnum.CUSTOMER)
   }
 
-  // @Roles('admin')
-  @Public()
+  @Roles('admin')
   @Get('/seat/:eventID')
   findSeatByEventID(
     @Param('eventID') eventID: number,
@@ -39,15 +36,13 @@ export class AdminEventController {
     return this.adminEventLogic.findALlSeatByEventID(Number(eventID), query)
   }
 
-  // @Roles('admin')
-  @Public()
+  @Roles('admin')
   @Get('/')
   find(@Query() query: PaginateDto) {
     return this.adminEventLogic.findEventPagination(query)
   }
 
-  // @Roles('admin')
-  @Public()
+  @Roles('admin')
   @Get('/:eventID')
   findAllByEventID(@Param('eventID') eventID: number) {
     return this.adminEventLogic.findByEventID(Number(eventID))
