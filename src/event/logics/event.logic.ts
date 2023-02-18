@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common'
 import { PaginateDto } from 'src/common/dto/pagination.dto'
 import { EventDB } from '../services/event.db'
-import { CreateEventDto } from '../dto/CreateEvent.dto'
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { CreateSeatDto } from '../dto/CreateSeat.dto'
 import { SeatDB } from '../services/seat.db'

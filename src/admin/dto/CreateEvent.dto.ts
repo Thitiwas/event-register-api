@@ -62,15 +62,11 @@ export class CreateEventDto {
   @ApiProperty({
     example: 1
   })
-  seatPerUser: number
+  seatPerUser: number = 1
 
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({
-    example: StatusEnum.ACTIVE
-  })
-  @IsString()
-  status: StatusEnum
+  status: StatusEnum = StatusEnum.ACTIVE
 
   @IsOptional()
   @IsNumber()
