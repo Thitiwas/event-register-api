@@ -97,10 +97,8 @@ export class AdminEventLogic {
       ).toMillis()
 
       const dateToCheck = DateTime.now().toMillis()
-      if (dateToCheck <= startDate || dateToCheck >= endDate) {
-        let message = 'Event นี้ปิดลงทะเบียนแล้ว'
-        if (dateToCheck <= startDate) message = 'Event นี้ยังไม่เปิดลงทะเบียน'
-        throw new BadRequestException(message)
+      if (dateToCheck >= endDate) {
+        throw new BadRequestException('Event นี้ปิดลงทะเบียนแล้ว')
       } else if (seatData.status === SeatStatusEnum.BOOKED) {
         throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
       }
