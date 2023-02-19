@@ -13,6 +13,9 @@ import { GetSeatDto } from '../dto/GetSeat.dto'
 import { RoleEnum } from 'src/common/enum/role.enum'
 import { RegisterDto } from '../dto/Register.dto'
 import { SeatStatusEnum } from 'src/common/enum/seat.enum'
+import { DateTime } from 'luxon'
+import { Op } from 'sequelize'
+import { Event } from '../../models/events.model'
 @Injectable()
 export class AdminEventLogic {
   constructor(private eventDB: EventDB, private seatDB: SeatDB) {}
@@ -42,12 +45,7 @@ export class AdminEventLogic {
   }
 
   async findEventPagination(query: PaginateDto) {
-    return await this.eventDB.findPagination(
-      {
-        // add date condition
-      },
-      query
-    )
+    return await this.eventDB.findPagination({}, query)
   }
 
   async findByEventID(eventID: number) {
@@ -78,13 +76,35 @@ export class AdminEventLogic {
 
   async register(payload: RegisterDto, role: string) {
     try {
-      const seatData = await this.findSeatByID(payload.seatID)
-      if (seatData.status === SeatStatusEnum.BOOKED)
-        throw new BadRequestException(
-          `selected seat not available please try again.`
-        )
-      await JwtAuthGuard.getAuthorizedUser()
-      if (role === RoleEnum.ADMIN) payload.bookedByAdmin = true
+      const seatData = await this.seatDB.findOne(
+        { seatID: payload.seatID },
+        [],
+        [
+          {
+            model: Event,
+            attributes: ['startRegisterAt', 'endRegisterAt']
+          }
+        ]
+      )
+      if (!seatData || !seatData.event) {
+        throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกไม่มีอยู่`)
+      }
+      const startDate = DateTime.fromJSDate(
+        seatData.event.startRegisterAt
+      ).toMillis()
+      const endDate = DateTime.fromJSDate(
+        seatData.event.endRegisterAt
+      ).toMillis()
+
+      const dateToCheck = DateTime.now().toMillis()
+      if (dateToCheck <= startDate || dateToCheck >= endDate) {
+        let message = 'Event นี้ปิดลงทะเบียนแล้ว'
+        if (dateToCheck <= startDate) message = 'Event นี้ยังไม่เปิดลงทะเบียน'
+        throw new BadRequestException(message)
+      } else if (seatData.status === SeatStatusEnum.BOOKED) {
+        throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
+      }
+      payload.bookedByAdmin = true
       payload.status = SeatStatusEnum.BOOKED
       await this.seatDB.update(
         { eventID: payload.eventID, seatID: payload.seatID },
@@ -92,7 +112,7 @@ export class AdminEventLogic {
       )
       return { message: 'update success' }
     } catch (error) {
-      throw new InternalServerErrorException(error)
+      throw error
     }
   }
 }
