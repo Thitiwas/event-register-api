@@ -44,6 +44,9 @@ export class Event extends Model {
   totalSeat: number
 
   @Column(DataType.INTEGER)
+  availableseat: number
+
+  @Column(DataType.INTEGER)
   seatPerUser: number
 
   @Column(DataType.TEXT)

@@ -5,19 +5,22 @@ import {
 } from '@nestjs/common'
 import { PaginateDto } from 'src/common/dto/pagination.dto'
 import { EventDB } from '../services/event.db'
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { CreateSeatDto } from '../dto/CreateSeat.dto'
 import { SeatDB } from '../services/seat.db'
 import { GetSeatDto } from '../dto/GetSeat.dto'
-import { RoleEnum } from 'src/common/enum/role.enum'
 import { RegisterDto } from '../dto/Register.dto'
 import { SeatStatusEnum } from 'src/common/enum/seat.enum'
 import { DateTime } from 'luxon'
 import { Op } from 'sequelize'
 import { Event } from '../../models/events.model'
+import { Sequelize } from 'sequelize-typescript'
 @Injectable()
 export class EventLogic {
-  constructor(private eventDB: EventDB, private seatDB: SeatDB) {}
+  constructor(
+    private eventDB: EventDB,
+    private seatDB: SeatDB,
+    private sequelize: Sequelize
+  ) {}
   async genSeats(eventID: number, totalSeat: number) {
     if (!totalSeat)
       throw new BadRequestException('cannot generate seat please try again')
@@ -77,18 +80,23 @@ export class EventLogic {
     }
   }
 
-  async register(payload: RegisterDto, role: string) {
+  async registerTransaction(payload: RegisterDto, role: string) {
+    const transaction = await this.sequelize.transaction()
+
     try {
       const seatData = await this.seatDB.findOne(
-        { seatID: payload.seatID },
+        { seatID: payload.seatID, eventID: payload.eventID },
         [],
         [
           {
             model: Event,
             attributes: ['startRegisterAt', 'endRegisterAt']
           }
-        ]
+        ],
+        [],
+        transaction
       )
+
       if (!seatData || !seatData.event) {
         throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกไม่มีอยู่`)
       }
@@ -107,13 +115,24 @@ export class EventLogic {
       } else if (seatData.status === SeatStatusEnum.BOOKED) {
         throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
       }
+
       payload.status = SeatStatusEnum.BOOKED
       await this.seatDB.update(
         { eventID: payload.eventID, seatID: payload.seatID },
-        payload
+        payload,
+        transaction
       )
+      const q = await this.eventDB.decrement(
+        { eventID: payload.eventID },
+        'availableseat',
+        transaction
+      )
+      console.log(q)
+
+      await transaction.commit()
       return { message: 'update success' }
     } catch (error) {
+      await transaction.rollback()
       throw error
     }
   }

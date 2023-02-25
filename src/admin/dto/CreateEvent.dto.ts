@@ -46,6 +46,10 @@ export class CreateEventDto {
   })
   endRegisterAt: Date
 
+  @IsOptional()
+  @IsNumber()
+  availableseat: number
+
   @IsNumber()
   @ApiProperty({
     example: 5

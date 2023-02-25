@@ -10,19 +10,23 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { CreateSeatDto } from '../dto/CreateSeat.dto'
 import { SeatDB } from '../../event/services/seat.db'
 import { GetSeatDto } from '../dto/GetSeat.dto'
-import { RoleEnum } from 'src/common/enum/role.enum'
 import { RegisterDto } from '../dto/Register.dto'
 import { SeatStatusEnum } from 'src/common/enum/seat.enum'
 import { DateTime } from 'luxon'
-import { Op } from 'sequelize'
 import { Event } from '../../models/events.model'
+import { Sequelize } from 'sequelize-typescript'
 @Injectable()
 export class AdminEventLogic {
-  constructor(private eventDB: EventDB, private seatDB: SeatDB) {}
+  constructor(
+    private eventDB: EventDB,
+    private seatDB: SeatDB,
+    private sequelize: Sequelize
+  ) {}
 
   async create(payload: CreateEventDto) {
     try {
       payload.createdBy = await JwtAuthGuard.getAuthorizedUserId()
+      payload.availableseat = payload.totalSeat
       const resEvent = await this.eventDB.create(payload)
       const seats = await this.genSeats(resEvent.eventID, payload.totalSeat)
       return await this.seatDB.bulkCreate(seats)
@@ -74,18 +78,23 @@ export class AdminEventLogic {
     }
   }
 
-  async register(payload: RegisterDto, role: string) {
+  async registerTransaction(payload: RegisterDto, role: string) {
+    const transaction = await this.sequelize.transaction()
+
     try {
       const seatData = await this.seatDB.findOne(
-        { seatID: payload.seatID },
+        { seatID: payload.seatID, eventID: payload.eventID },
         [],
         [
           {
             model: Event,
             attributes: ['startRegisterAt', 'endRegisterAt']
           }
-        ]
+        ],
+        [],
+        transaction
       )
+
       if (!seatData || !seatData.event) {
         throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกไม่มีอยู่`)
       }
@@ -97,8 +106,10 @@ export class AdminEventLogic {
       ).toMillis()
 
       const dateToCheck = DateTime.now().toMillis()
-      if (dateToCheck >= endDate) {
-        throw new BadRequestException('Event นี้ปิดลงทะเบียนแล้ว')
+      if (dateToCheck <= startDate || dateToCheck >= endDate) {
+        let message = 'Event นี้ปิดลงทะเบียนแล้ว'
+        if (dateToCheck <= startDate) message = 'Event นี้ยังไม่เปิดลงทะเบียน'
+        throw new BadRequestException(message)
       } else if (seatData.status === SeatStatusEnum.BOOKED) {
         throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
       }
@@ -106,10 +117,18 @@ export class AdminEventLogic {
       payload.status = SeatStatusEnum.BOOKED
       await this.seatDB.update(
         { eventID: payload.eventID, seatID: payload.seatID },
-        payload
+        payload,
+        transaction
       )
+      await this.eventDB.decrement(
+        { eventID: payload.eventID },
+        'availableseat',
+        transaction
+      )
+      await transaction.commit()
       return { message: 'update success' }
     } catch (error) {
+      await transaction.rollback()
       throw error
     }
   }

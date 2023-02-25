@@ -34,21 +34,29 @@ export class SeatDB {
     return await this.seatModel.findAll(payload)
   }
 
-  async update(condition: WhereOptions, payload?: any): Promise<any> {
-    return await this.seatModel.update(payload, {
+  async update(
+    condition: WhereOptions,
+    payload?: any,
+    transaction?: any
+  ): Promise<any> {
+    let options = {
       where: condition
-    })
+    }
+    if (transaction) options['transaction'] = transaction
+    return await this.seatModel.update(payload, options)
   }
 
   findOne(
     condition: WhereOptions,
     attributes?: Array<string>,
     includes?: Array<any>,
-    order?: Array<any>
+    order?: Array<any>,
+    transaction?: any
   ): Promise<Seat> {
     const payload = {
       where: condition
     }
+    if (transaction) payload['transaction'] = transaction
     if (order && order.length) payload['order'] = order
     if (attributes && attributes.length) payload['attributes'] = attributes
     if (includes && includes.length) payload['include'] = includes

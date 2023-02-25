@@ -28,7 +28,7 @@ export class AdminEventController {
   @Roles('admin')
   @Post('/register')
   register(@Body() body: RegisterDto) {
-    return this.adminEventLogic.register(body, RoleEnum.CUSTOMER)
+    return this.adminEventLogic.registerTransaction(body, RoleEnum.CUSTOMER)
   }
 
   @ApiOperation({

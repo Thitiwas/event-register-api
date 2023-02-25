@@ -20,7 +20,7 @@ export class EventController {
   @Public()
   @Post('/register')
   register(@Body() body: RegisterDto) {
-    return this.eventLogic.register(body, RoleEnum.CUSTOMER)
+    return this.eventLogic.registerTransaction(body, RoleEnum.CUSTOMER)
   }
 
   @ApiOperation({

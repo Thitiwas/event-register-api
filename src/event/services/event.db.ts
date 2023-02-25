@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/sequelize'
+import { Sequelize } from 'sequelize-typescript'
 import { WhereOptions } from 'sequelize/types/model'
 import { FindOneDto } from 'src/common/dto/findone.dto'
 import { PaginateDto } from 'src/common/dto/pagination.dto'
@@ -60,5 +61,19 @@ export class EventDB {
     const total = await this.eventModel.count(payload)
     const results = await this.eventModel.findAll(payload)
     return { total, results }
+  }
+
+  async decrement(condition: WhereOptions, field: string, transaction?: any) {
+    let options = {
+      where: condition
+    }
+    if (transaction) options['transaction'] = transaction
+    const decrementValue = 1
+    return await this.eventModel.update(
+      {
+        [field]: Sequelize.literal(`${field} - ${decrementValue}`)
+      },
+      options
+    )
   }
 }
