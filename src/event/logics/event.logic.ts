@@ -14,12 +14,16 @@ import { DateTime } from 'luxon'
 import { Op } from 'sequelize'
 import { Event } from '../../models/events.model'
 import { Sequelize } from 'sequelize-typescript'
+import { Seat } from '../../models/seat.model'
+import { InjectModel } from '@nestjs/sequelize'
+import { Transaction } from 'sequelize'
 @Injectable()
 export class EventLogic {
   constructor(
     private eventDB: EventDB,
     private seatDB: SeatDB,
-    private sequelize: Sequelize
+    @InjectModel(Seat)
+    private seatModel: typeof Seat
   ) {}
   async genSeats(eventID: number, totalSeat: number) {
     if (!totalSeat)
@@ -81,24 +85,33 @@ export class EventLogic {
   }
 
   async registerTransaction(payload: RegisterDto, role: string) {
-    const transaction = await this.sequelize.transaction()
-
+    const transaction = await this.seatModel.sequelize.transaction()
     try {
-      const seatData = await this.seatDB.findOne(
-        { seatID: payload.seatID, eventID: payload.eventID },
-        [],
-        [
+      const seatData = await this.seatModel.findOne({
+        where: {
+          seatID: payload.seatID,
+          eventID: payload.eventID,
+          status: 'available'
+        },
+        include: [
           {
             model: Event,
             attributes: ['startRegisterAt', 'endRegisterAt']
           }
         ],
-        [],
+        lock: {
+          of: Seat,
+          level: Transaction.LOCK.UPDATE
+        },
         transaction
-      )
+      })
 
-      if (!seatData || !seatData.event) {
-        throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกไม่มีอยู่`)
+      if (
+        !seatData ||
+        !seatData.event ||
+        seatData.status !== SeatStatusEnum.AVAILABLE
+      ) {
+        throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
       }
       const startDate = DateTime.fromJSDate(
         seatData.event.startRegisterAt
@@ -112,8 +125,6 @@ export class EventLogic {
         let message = 'Event นี้ปิดลงทะเบียนแล้ว'
         if (dateToCheck <= startDate) message = 'Event นี้ยังไม่เปิดลงทะเบียน'
         throw new BadRequestException(message)
-      } else if (seatData.status === SeatStatusEnum.BOOKED) {
-        throw new BadRequestException(`ตำแหน่งที่นั่งที่คุณเลือกถูกจองแล้ว`)
       }
 
       payload.status = SeatStatusEnum.BOOKED
@@ -122,12 +133,11 @@ export class EventLogic {
         payload,
         transaction
       )
-      const q = await this.eventDB.decrement(
+      await this.eventDB.decrement(
         { eventID: payload.eventID },
         'availableseat',
         transaction
       )
-      console.log(q)
 
       await transaction.commit()
       return { message: 'update success' }
